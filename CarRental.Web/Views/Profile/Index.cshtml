@@ -1,0 +1,389 @@
+﻿@model CarRental.Core.Models.Client
+@{
+    ViewData["Title"] = ViewBag.IsEditMode ? "Edit Profile" : "My Profile";
+    var isEditMode = ViewBag.IsEditMode ?? false;
+    var totalRentals = ViewBag.TotalRentals ?? 0;
+    var activeRentals = ViewBag.ActiveRentals ?? 0;
+    var totalSpent = ViewBag.TotalSpent ?? 0m;
+}
+
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>@(isEditMode ? "Edit Profile" : "My Profile")</h1>
+        @if (!isEditMode)
+        {
+            <a href="@Url.Action("Index", new { edit = true })" class="btn btn-primary">
+                <i class="bi bi-pencil-square"></i> Edit Profile
+            </a>
+        }
+        else
+        {
+            <a href="@Url.Action("Index")" class="btn btn-outline-secondary">
+                <i class="bi bi-x-circle"></i> Cancel Edit
+            </a>
+        }
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle"></i> @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle"></i> @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (TempData["Info"] != null)
+    {
+        <div class="alert alert-info alert-dismissible fade show" role="alert">
+            <i class="bi bi-info-circle"></i> @TempData["Info"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="row">
+        <!-- Left Column - Profile Information -->
+        <div class="col-md-8">
+            @if (isEditMode)
+            {
+                <!-- EDIT MODE FORM -->
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="bi bi-pencil-square"></i> Update Your Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="post" action="@Url.Action("Update")">
+                            @Html.AntiForgeryToken()
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">First Name *</label>
+                                    <input type="text" class="form-control" name="FirstName"
+                                           value="@Model.FirstName" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Last Name *</label>
+                                    <input type="text" class="form-control" name="LastName"
+                                           value="@Model.LastName" required>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Email *</label>
+                                <input type="email" class="form-control" name="Email"
+                                       value="@Model.Email" required>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Phone Number</label>
+                                <input type="tel" class="form-control" name="Phone"
+                                       value="@Model.Phone">
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Address</label>
+                                <textarea class="form-control" name="Address" rows="2">@Model.Address</textarea>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Driver's License Number</label>
+                                <input type="text" class="form-control" name="LicenseNumber"
+                                       value="@Model.LicenseNumber">
+                            </div>
+
+                            <!-- Password Change Section -->
+                            <div class="card mt-4">
+                                <div class="card-header bg-warning text-dark">
+                                    <h6 class="mb-0"><i class="bi bi-key"></i> Change Password (Optional)</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <label class="form-label">New Password</label>
+                                        <input type="password" class="form-control" name="newPassword"
+                                               placeholder="Leave empty to keep current password" minlength="6">
+                                        <small class="text-muted">Minimum 6 characters</small>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label class="form-label">Confirm New Password</label>
+                                        <input type="password" class="form-control" name="confirmPassword"
+                                               placeholder="Confirm new password">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mt-4">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-check-circle"></i> Save All Changes
+                                </button>
+                                <a href="@Url.Action("Index")" class="btn btn-outline-secondary">
+                                    <i class="bi bi-x-circle"></i> Cancel
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <!-- VIEW MODE -->
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="bi bi-person-circle"></i> Personal Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <table class="table table-borderless">
+                                    <tr>
+                                        <th width="40%">Name:</th>
+                                        <td><strong>@Model.FirstName @Model.LastName</strong></td>
+                                    </tr>
+                                    <tr>
+                                        <th>Email:</th>
+                                        <td>@Model.Email</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Phone:</th>
+                                        <td>@(string.IsNullOrEmpty(Model.Phone) ? "Not provided" : Model.Phone)</td>
+                                    </tr>
+                                </table>
+                            </div>
+                            <div class="col-md-6">
+                                <table class="table table-borderless">
+                                    <tr>
+                                        <th width="40%">Address:</th>
+                                        <td>@(string.IsNullOrEmpty(Model.Address) ? "Not provided" : Model.Address)</td>
+                                    </tr>
+                                    <tr>
+                                        <th>License #:</th>
+                                        <td>@(string.IsNullOrEmpty(Model.LicenseNumber) ? "Not provided" : Model.LicenseNumber)</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Member Since:</th>
+                                        <td>@Model.CreatedAt.ToString("MMMM dd, yyyy")</td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Danger Zone -->
+                <div class="card mt-4 border-danger">
+                    <div class="card-header bg-danger text-white">
+                        <h5 class="mb-0"><i class="bi bi-exclamation-triangle"></i> Danger Zone</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted">Once you delete your account, there is no going back. Please be certain.</p>
+
+                        <form method="post" action="@Url.Action("Delete")" id="deleteForm" class="mt-3">
+                            @Html.AntiForgeryToken()
+
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" id="confirmDelete" required>
+                                <label class="form-check-label text-danger" for="confirmDelete">
+                                    I understand that this will permanently delete my account and all data.
+                                </label>
+                            </div>
+
+                            <button type="button" class="btn btn-outline-danger" id="deleteButton" disabled>
+                                <i class="bi bi-trash"></i> Delete My Account
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- Right Column - Stats & Actions -->
+        <div class="col-md-4">
+            <!-- Stats Card -->
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="bi bi-graph-up"></i> Rental Statistics</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6 mb-3">
+                            <div class="p-3 bg-light rounded">
+                                <h3 class="text-primary mb-0">@totalRentals</h3>
+                                <small class="text-muted">Total Rentals</small>
+                            </div>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <div class="p-3 bg-light rounded">
+                                <h3 class="text-success mb-0">$@totalSpent.ToString("0.00")</h3>
+                                <small class="text-muted">Total Spent</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="p-3 bg-light rounded">
+                                <h3 class="text-warning mb-0">@activeRentals</h3>
+                                <small class="text-muted">Active Rentals</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="p-3 bg-light rounded">
+                                <h3 class="text-secondary mb-0">@(totalRentals - activeRentals)</h3>
+                                <small class="text-muted">Completed</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions Card -->
+            <div class="card">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0"><i class="bi bi-lightning"></i> Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="@Url.Action("Index", "Rental")" class="btn btn-outline-primary">
+                            <i class="bi bi-calendar-check"></i> View My Rentals
+                        </a>
+                        <a href="@Url.Action("Create", "Rental")" class="btn btn-outline-success">
+                            <i class="bi bi-plus-circle"></i> Create New Rental
+                        </a>
+                        <a href="@Url.Action("Index", "Home")" class="btn btn-outline-info">
+                            <i class="bi bi-search"></i> Browse Vehicles
+                        </a>
+                        @if (!isEditMode)
+                        {
+                            <a href="@Url.Action("Index", new { edit = true })" class="btn btn-outline-warning">
+                                <i class="bi bi-pencil"></i> Edit Profile
+                            </a>
+                        }
+                        <a href="@Url.Action("Logout", "Auth")" class="btn btn-outline-danger">
+                            <i class="bi bi-box-arrow-right"></i> Logout
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Account Status Card -->
+            <div class="card mt-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="bi bi-shield-check"></i> Account Status</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-success rounded-circle p-2 me-3">
+                            <i class="bi bi-check-circle text-white"></i>
+                        </div>
+                        <div>
+                            <h6 class="mb-0">Active</h6>
+                            <small class="text-muted">Account in good standing</small>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <div class="bg-primary rounded-circle p-2 me-3">
+                            <i class="bi bi-calendar-check text-white"></i>
+                        </div>
+                        <div>
+                            <h6 class="mb-0">Member for</h6>
+                            <small class="text-muted">@((DateTime.Now - Model.CreatedAt).Days) days</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Delete account confirmation
+            const deleteForm = document.getElementById('deleteForm');
+            const confirmCheckbox = document.getElementById('confirmDelete');
+            const deleteButton = document.getElementById('deleteButton');
+
+            if (deleteButton && confirmCheckbox) {
+                confirmCheckbox.addEventListener('change', function() {
+                    deleteButton.disabled = !this.checked;
+                });
+
+                deleteButton.addEventListener('click', function(e) {
+                    e.preventDefault();
+
+                    if (confirm('⚠️ FINAL WARNING ⚠️\n\n' +
+                               'This will PERMANENTLY delete:\n' +
+                               '• Your account and profile\n' +
+                               '• All rental history\n' +
+                               '• All payment records\n\n' +
+                               'This action cannot be undone!\n\n' +
+                               'Are you absolutely sure?')) {
+                        deleteForm.submit();
+                    }
+                });
+            }
+
+            // Form validation for password match
+            const newPasswordInput = document.querySelector('input[name="newPassword"]');
+            const confirmPasswordInput = document.querySelector('input[name="confirmPassword"]');
+
+            if (newPasswordInput && confirmPasswordInput) {
+                function validatePasswords() {
+                    if (newPasswordInput.value && confirmPasswordInput.value) {
+                        if (newPasswordInput.value !== confirmPasswordInput.value) {
+                            confirmPasswordInput.setCustomValidity('Passwords do not match');
+                        } else {
+                            confirmPasswordInput.setCustomValidity('');
+                        }
+                    }
+                }
+
+                newPasswordInput.addEventListener('input', validatePasswords);
+                confirmPasswordInput.addEventListener('input', validatePasswords);
+            }
+        });
+    </script>
+}
+
+<style>
+    .card {
+        border: none;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+        margin-bottom: 20px;
+    }
+
+    .card-header {
+        border-bottom: none;
+        font-weight: 600;
+    }
+
+    .table-borderless th {
+        font-weight: 600;
+        color: #6c757d;
+    }
+
+    .bg-light.rounded {
+        transition: all 0.2s;
+    }
+
+        .bg-light.rounded:hover {
+            background-color: #e9ecef !important;
+            transform: translateY(-2px);
+        }
+
+    .btn-outline-danger {
+        border-width: 2px;
+    }
+
+    .rounded-circle {
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+</style>

@@ -1,0 +1,154 @@
+﻿@model CarRental.Core.Models.Vehicle
+@{
+    ViewData["Title"] = $"{Model.Brand} {Model.Model} Details";
+}
+
+<div class="container">
+    <div class="row">
+        <div class="col-md-8">
+            <h1>@Model.Brand @Model.Model</h1>
+            <h4 class="text-muted">@Model.Year • @Model.Category</h4>
+
+            <div class="card mt-4">
+                <div class="card-body">
+                    <h5 class="card-title">Vehicle Information</h5>
+                    <table class="table">
+                        <tr>
+                            <th>License Plate:</th>
+                            <td>@Model.LicensePlate</td>
+                        </tr>
+                        <tr>
+                            <th>Daily Rate:</th>
+                            <td>$@Model.DailyRate.ToString("0.00")</td>
+                        </tr>
+                        <tr>
+                            <th>Category:</th>
+                            <td>@Model.Category</td>
+                        </tr>
+                        <tr>
+                            <th>Kilometers:</th>
+                            <td>@Model.Kilometers.ToString("N0") km</td>
+                        </tr>
+                        <tr>
+                            <th>Last Maintenance:</th>
+                            <td>@Model.LastMaintenanceDate.ToString("MMM dd, yyyy")</td>
+                        </tr>
+                        <tr>
+                            <th>Availability:</th>
+                            <td>
+                                @if (Model.IsAvailable)
+                                {
+                                    <span class="badge bg-success">Available</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-danger">Not Available</span>
+                                }
+                            </td>
+                        </tr>
+                    </table>
+
+                    <div class="mt-4">
+                        @if (Model.IsAvailable)
+                        {
+                            @if (Context.Session.GetInt32("ClientId") != null)
+                            {
+                                <a href="@Url.Action("Create", "Rental", new { vehicleId = Model.Id })" class="btn btn-primary btn-lg">Rent This Vehicle</a>
+                            }
+                            else
+                            {
+                                <a href="@Url.Action("Login", "Auth")" class="btn btn-primary btn-lg">Login to Rent</a>
+                            }
+                        }
+                        else
+                        {
+                            <button class="btn btn-secondary btn-lg" disabled>Currently Unavailable</button>
+                        }
+                        <a href="@Url.Action("Index", "Home")" class="btn btn-outline-secondary">Back to List</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Quick Rental Calculator</h5>
+                    <form>
+                        <div class="mb-3">
+                            <label for="startDate" class="form-label">Start Date</label>
+                            <input type="date" class="form-control" id="startDate" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="endDate" class="form-label">End Date</label>
+                            <input type="date" class="form-control" id="endDate" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Estimated Total</label>
+                            <h4 id="estimatedTotal">$0.00</h4>
+                        </div>
+                        @if (Context.Session.GetInt32("ClientId") != null)
+                        {
+                            <a href="@Url.Action("Create", "Rental", new { vehicleId = Model.Id })" class="btn btn-primary w-100 @(Model.IsAvailable ? "" : "disabled")">
+                                Reserve Now
+                            </a>
+                        }
+                        else
+                        {
+                            <a href="@Url.Action("Login", "Auth")" class="btn btn-primary w-100">
+                                Login to Reserve
+                            </a>
+                        }
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+@section Scripts {
+    <script>
+        // Simple price calculator
+        document.addEventListener('DOMContentLoaded', function() {
+            const dailyRate = @Model.DailyRate;
+            const startDateInput = document.getElementById('startDate');
+            const endDateInput = document.getElementById('endDate');
+            const estimatedTotal = document.getElementById('estimatedTotal');
+
+            // Set minimum date to today
+            const today = new Date().toISOString().split('T')[0];
+            startDateInput.min = today;
+            startDateInput.value = today;
+
+            // Set default end date to 3 days from now
+            const defaultEndDate = new Date();
+            defaultEndDate.setDate(defaultEndDate.getDate() + 3);
+            endDateInput.min = today;
+            endDateInput.value = defaultEndDate.toISOString().split('T')[0];
+
+            // Calculate initial total
+            calculateTotal();
+
+            function calculateTotal() {
+                const startDate = new Date(startDateInput.value);
+                const endDate = new Date(endDateInput.value);
+
+                if (startDate && endDate && endDate > startDate) {
+                    const days = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
+                    const total = days * dailyRate;
+                    estimatedTotal.textContent = '$' + total.toFixed(2);
+                } else {
+                    estimatedTotal.textContent = '$0.00';
+                }
+            }
+
+            startDateInput.addEventListener('change', function() {
+                endDateInput.min = this.value;
+                calculateTotal();
+            });
+
+            endDateInput.addEventListener('change', calculateTotal);
+        });
+    </script>
+}

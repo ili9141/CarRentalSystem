@@ -1,0 +1,386 @@
+﻿@model List<CarRental.Core.Models.Vehicle>
+@{
+    ViewData["Title"] = "Rental Vehicles";
+    var categories = ViewBag.Categories as List<CarRental.Core.Models.VehicleCategory> ?? new();
+    var selectedCategory = ViewBag.SelectedCategory as string;
+    var minPrice = ViewBag.MinPrice as decimal?;
+    var maxPrice = ViewBag.MaxPrice as decimal?;
+    var minDailyRate = ViewBag.MinDailyRate as decimal? ?? 0;
+    var maxDailyRate = ViewBag.MaxDailyRate as decimal? ?? 200;
+}
+
+<div class="container">
+    <h1 class="mb-4">Rental Vehicles</h1>
+
+    <!-- Filter Section -->
+    <div class="card mb-4 shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="bi bi-funnel"></i> Filter Vehicles</h5>
+        </div>
+        <div class="card-body">
+            <form method="get" action="@Url.Action("Index", "Home")" class="row g-3">
+                <!-- Category Filter -->
+                <div class="col-md-4">
+                    <label class="form-label">Vehicle Category</label>
+                    <select name="category" class="form-select">
+                        <option value="">All Categories</option>
+                        @foreach (var category in categories)
+                        {
+                            <option value="@category" selected="@(selectedCategory == category.ToString())">
+                                @category
+                            </option>
+                        }
+                    </select>
+                </div>
+
+                <!-- Price Range Filter -->
+                <div class="col-md-4">
+                    <label class="form-label">Min Daily Price</label>
+                    <div class="input-group">
+                        <span class="input-group-text">$</span>
+                        <input type="number" name="minPrice" class="form-control" 
+                               min="0" max="1000" step="5"
+                               placeholder="From" 
+                               value="@(minPrice?.ToString("0") ?? "")">
+                        <span class="input-group-text">.00</span>
+                    </div>
+                    <small class="text-muted">Lowest: $@minDailyRate.ToString("0")</small>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Max Daily Price</label>
+                    <div class="input-group">
+                        <span class="input-group-text">$</span>
+                        <input type="number" name="maxPrice" class="form-control" 
+                               min="0" max="1000" step="5"
+                               placeholder="To" 
+                               value="@(maxPrice?.ToString("0") ?? "")">
+                        <span class="input-group-text">.00</span>
+                    </div>
+                    <small class="text-muted">Highest: $@maxDailyRate.ToString("0")</small>
+                </div>
+
+                <!-- Hidden page parameter for filter form -->
+                <input type="hidden" name="page" value="1" />
+
+                <!-- Filter Buttons -->
+                <div class="col-md-12">
+                    <div class="d-flex justify-content-between mt-3">
+                        <div>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-search"></i> Apply Filters
+                            </button>
+                            <a href="@Url.Action("Index", "Home")" class="btn btn-outline-secondary">
+                                <i class="bi bi-x-circle"></i> Clear Filters
+                            </a>
+                        </div>
+                        <div>
+                            <span class="badge bg-info">
+                                <i class="bi bi-car-front"></i> 
+                                @ViewBag.TotalItems vehicles found
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Results Section -->
+    @if (Model.Any())
+    {
+        <div class="row">
+            @foreach (var vehicle in Model)
+            {
+                // Check if vehicle is currently rented
+                var isRentedToday = ViewData[$"IsRented_{vehicle.Id}"] as bool? ?? false;
+                var rentalEndDate = ViewData[$"RentalEndDate_{vehicle.Id}"] as DateTime?;
+                
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100 @(isRentedToday ? "border-warning" : "border-light") shadow-sm">
+                        <!-- Reserved Header -->
+                        @if (isRentedToday)
+                        {
+                            <div class="card-header bg-warning text-dark">
+                                <i class="bi bi-clock"></i> Reserved
+                                @if (rentalEndDate.HasValue)
+                                {
+                                    <small class="float-end">Available @rentalEndDate.Value.ToString("MMM dd")</small>
+                                }
+                            </div>
+                        }
+                        
+                        <div class="card-body">
+                            <!-- Category Badge -->
+                            <div class="mb-2">
+                                <span class="badge bg-secondary">
+                                    <i class="bi bi-tag"></i> @vehicle.Category
+                                </span>
+                            </div>
+
+                            <h5 class="card-title">@vehicle.Brand @vehicle.Model</h5>
+                            <h6 class="card-subtitle mb-2 text-muted">
+                                @vehicle.Year • @vehicle.Kilometers.ToString("N0") km
+                            </h6>
+                            
+                            <!-- Price Highlight -->
+                            <div class="mb-3">
+                                <h4 class="text-success">$@vehicle.DailyRate.ToString("0.00")<small class="text-muted">/day</small></h4>
+                            </div>
+                            
+                            <p class="card-text">
+                                <strong><i class="bi bi-upc-scan"></i> License:</strong> @vehicle.LicensePlate<br>
+                                <strong><i class="bi bi-speedometer2"></i> Kilometers:</strong> @vehicle.Kilometers.ToString("N0") km
+                            </p>
+                            
+                            <!-- Status Badge -->
+                            <div class="mb-3">
+                                @if (!vehicle.IsAvailable)
+                                {
+                                    <span class="badge bg-danger">
+                                        <i class="bi bi-tools"></i> Under Maintenance
+                                    </span>
+                                }
+                                else if (isRentedToday)
+                                {
+                                    <span class="badge bg-warning text-dark">
+                                        <i class="bi bi-clock-history"></i> Reserved
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-success">
+                                        <i class="bi bi-check-circle"></i> Available
+                                    </span>
+                                }
+                            </div>
+
+                            <!-- Action Buttons -->
+                            <div class="mt-3">
+                                <!-- View Details Button -->
+                                <a href="@Url.Action("Details", "Home", new { id = vehicle.Id })"
+                                   class="btn btn-primary btn-sm">
+                                    <i class="bi bi-eye"></i> Details
+                                </a>
+                                
+                                <!-- Rent Button (conditionally enabled) -->
+                                @if (Context.Session.GetInt32("ClientId") != null)
+                                {
+                                    if (!vehicle.IsAvailable)
+                                    {
+                                        <button class="btn btn-secondary btn-sm" disabled>
+                                            <i class="bi bi-tools"></i> Maintenance
+                                        </button>
+                                    }
+                                    else if (isRentedToday)
+                                    {
+                                        <button class="btn btn-warning btn-sm" disabled>
+                                            <i class="bi bi-clock"></i> Reserved
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <a href="@Url.Action("Create", "Rental", new { vehicleId = vehicle.Id })"
+                                           class="btn btn-success btn-sm">
+                                            <i class="bi bi-car-front"></i> Rent Now
+                                        </a>
+                                    }
+                                }
+                                else
+                                {
+                                    <a href="@Url.Action("Login", "Auth")" class="btn btn-outline-success btn-sm">
+                                        <i class="bi bi-box-arrow-in-right"></i> Login to Rent
+                                    </a>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-warning text-center">
+            <h4 class="alert-heading"><i class="bi bi-search"></i> No Vehicles Found</h4>
+            <p>No vehicles match your current filters. Try adjusting your criteria.</p>
+            <a href="@Url.Action("Index", "Home")" class="btn btn-primary">
+                <i class="bi bi-x-circle"></i> Clear Filters
+            </a>
+        </div>
+    }
+
+    <!-- Active Filters Display -->
+    @if (!string.IsNullOrEmpty(selectedCategory) || minPrice.HasValue || maxPrice.HasValue)
+    {
+        <div class="mt-4">
+            <h6><i class="bi bi-funnel-fill"></i> Active Filters:</h6>
+            <div class="d-flex flex-wrap gap-2">
+                @if (!string.IsNullOrEmpty(selectedCategory))
+                {
+                    <span class="badge bg-primary">
+                        Category: @selectedCategory 
+                        <a href="@Url.Action("Index", "Home", new { 
+                            category = (string)null, 
+                            minPrice = minPrice, 
+                            maxPrice = maxPrice 
+                        })" class="text-white ms-2" style="text-decoration: none;">×</a>
+                    </span>
+                }
+                @if (minPrice.HasValue)
+                {
+                    <span class="badge bg-info text-dark">
+                        Min Price: $@minPrice.Value.ToString("0")
+                        <a href="@Url.Action("Index", "Home", new { 
+                            category = selectedCategory, 
+                            minPrice = (decimal?)null, 
+                            maxPrice = maxPrice 
+                        })" class="text-dark ms-2" style="text-decoration: none;">×</a>
+                    </span>
+                }
+                @if (maxPrice.HasValue)
+                {
+                    <span class="badge bg-info text-dark">
+                        Max Price: $@maxPrice.Value.ToString("0")
+                        <a href="@Url.Action("Index", "Home", new { 
+                            category = selectedCategory, 
+                            minPrice = minPrice, 
+                            maxPrice = (decimal?)null 
+                        })" class="text-dark ms-2" style="text-decoration: none;">×</a>
+                    </span>
+                }
+            </div>
+        </div>
+    }
+
+    <!-- Pagination Controls -->
+    @if (ViewBag.TotalPages > 1)
+    {
+        <nav aria-label="Page navigation" class="mt-5">
+            <ul class="pagination justify-content-center">
+                <!-- Previous Page -->
+                @if (ViewBag.HasPreviousPage)
+                {
+                    <li class="page-item">
+                        <a class="page-link" 
+                           href="@Url.Action("Index", new { 
+                               category = ViewBag.SelectedCategory,
+                               minPrice = ViewBag.MinPrice,
+                               maxPrice = ViewBag.MaxPrice,
+                               page = ViewBag.CurrentPage - 1
+                           })">
+                            <i class="bi bi-chevron-left"></i> Previous
+                        </a>
+                    </li>
+                }
+                else
+                {
+                    <li class="page-item disabled">
+                        <span class="page-link"><i class="bi bi-chevron-left"></i> Previous</span>
+                    </li>
+                }
+
+                <!-- Page Numbers -->
+                @for (int i = 1; i <= ViewBag.TotalPages; i++)
+                {
+                    if (i == ViewBag.CurrentPage)
+                    {
+                        <li class="page-item active">
+                            <span class="page-link">@i</span>
+                        </li>
+                    }
+                    else if (i == 1 || i == ViewBag.TotalPages || 
+                            (i >= ViewBag.CurrentPage - 2 && i <= ViewBag.CurrentPage + 2))
+                    {
+                        <li class="page-item">
+                            <a class="page-link" 
+                               href="@Url.Action("Index", new { 
+                                   category = ViewBag.SelectedCategory,
+                                   minPrice = ViewBag.MinPrice,
+                                   maxPrice = ViewBag.MaxPrice,
+                                   page = i
+                               })">@i</a>
+                        </li>
+                    }
+                    else if (i == ViewBag.CurrentPage - 3 || i == ViewBag.CurrentPage + 3)
+                    {
+                        <li class="page-item disabled">
+                            <span class="page-link">...</span>
+                        </li>
+                    }
+                }
+
+                <!-- Next Page -->
+                @if (ViewBag.HasNextPage)
+                {
+                    <li class="page-item">
+                        <a class="page-link" 
+                           href="@Url.Action("Index", new { 
+                               category = ViewBag.SelectedCategory,
+                               minPrice = ViewBag.MinPrice,
+                               maxPrice = ViewBag.MaxPrice,
+                               page = ViewBag.CurrentPage + 1
+                           })">
+                            Next <i class="bi bi-chevron-right"></i>
+                        </a>
+                    </li>
+                }
+                else
+                {
+                    <li class="page-item disabled">
+                        <span class="page-link">Next <i class="bi bi-chevron-right"></i></span>
+                    </li>
+                }
+            </ul>
+        </nav>
+    }
+
+    <!-- Results Summary -->
+    <div class="text-center text-muted mt-3">
+        <small>
+            Showing @((ViewBag.CurrentPage - 1) * ViewBag.PageSize + 1) to 
+            @Math.Min(ViewBag.CurrentPage * ViewBag.PageSize, ViewBag.TotalItems) 
+            of @ViewBag.TotalItems vehicles
+        </small>
+    </div>
+</div>
+
+<style>
+    .card {
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+    }
+    
+    .card.border-warning {
+        border-width: 2px;
+        border-style: solid;
+    }
+    
+    .btn:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+    }
+    
+    .badge {
+        font-size: 0.85em;
+        padding: 0.4em 0.8em;
+        border-radius: 10px;
+    }
+    
+    .card-header.bg-warning {
+        font-weight: 600;
+    }
+    
+    .input-group-text {
+        background-color: #f8f9fa;
+    }
+    
+    .page-item.active .page-link {
+        background-color: #0d6efd;
+        border-color: #0d6efd;
+    }
+</style>
