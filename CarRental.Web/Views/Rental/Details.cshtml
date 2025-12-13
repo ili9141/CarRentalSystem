@@ -1,0 +1,272 @@
+﻿@model CarRental.Core.Models.Rental
+@{
+    ViewData["Title"] = "Rental Details";
+}
+
+<div class="container">
+    <h1 class="mb-4">Rental Details</h1>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success">@TempData["Success"]</div>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger">@TempData["Error"]</div>
+    }
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Rental Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Vehicle Details</h6>
+                            <p>
+                                <strong>@Model.Vehicle.Brand @Model.Vehicle.Model</strong><br>
+                                <span class="text-muted">@Model.Vehicle.Year • @Model.Vehicle.Category</span><br>
+                                License: @Model.Vehicle.LicensePlate
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Rental Period</h6>
+                            <p>
+                                <strong>From:</strong> @Model.StartDate.ToString("dddd, MMMM dd, yyyy")<br>
+                                <strong>To:</strong> @Model.EndDate.ToString("dddd, MMMM dd, yyyy")<br>
+                                <strong>Duration:</strong> @((Model.EndDate - Model.StartDate).Days) days
+                            </p>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Client Information</h6>
+                            <p>
+                                @Model.Client.FirstName @Model.Client.LastName<br>
+                                @Model.Client.Email<br>
+                                @Model.Client.Phone
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Rental Status</h6>
+                            <p>
+                                <strong>Created:</strong> @Model.CreatedAt.ToString("MMMM dd, yyyy")<br>
+                                <strong>Status:</strong>
+                                @if (Model.EndDate < DateTime.Now)
+                                {
+                                    <span class="badge bg-secondary">Completed</span>
+                                }
+                                else if (Model.StartDate > DateTime.Now)
+                                {
+                                    <span class="badge bg-info">Upcoming</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-success">Active</span>
+                                }
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            @if (Model.Payments != null && Model.Payments.Any())
+            {
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Payment Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Amount</th>
+                                    <th>Method</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var payment in Model.Payments)
+                                {
+                                    <tr>
+                                        <td>@payment.PaymentDate.ToString("MMM dd, yyyy")</td>
+                                        <td><strong>$@payment.Amount.ToString("0.00")</strong></td>
+                                        <td>
+                                            @payment.PaymentMethod
+                                            @if (payment.PaymentMethod == "Cash")
+                                            {
+                                                <i class="bi bi-cash"></i>
+                                            }
+                                            else if (payment.PaymentMethod == "Debit Card")
+                                            {
+                                                <i class="bi bi-credit-card"></i>
+                                            }
+                                            else if (payment.PaymentMethod == "Credit Card")
+                                            {
+                                                <i class="bi bi-credit-card-2-back"></i>
+                                            }
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-success">@payment.Status</span>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">Payment Summary</h5>
+                </div>
+                <div class="card-body">
+                    <h3 class="text-center">$@Model.TotalPrice.ToString("0.00")</h3>
+                    <p class="text-center text-muted">Total Amount</p>
+
+                    <hr>
+
+                    <div class="d-grid gap-2">
+                        @if (Model.EndDate >= DateTime.Now)
+                        {
+                            <button type="button"
+                                    class="btn btn-outline-danger"
+                                    onclick="confirmCancel(@Model.Id, '@Model.Vehicle.Brand @Model.Vehicle.Model')">
+                                Cancel Rental
+                            </button>
+                        }
+
+                        <a href="@Url.Action("Index")" class="btn btn-outline-secondary">
+                            Back to My Rentals
+                        </a>
+
+                        <!-- QR button -->
+                        <button class="btn btn-outline-primary"
+                                data-bs-toggle="modal"
+                                data-bs-target="#qrModal">
+                            <i class="bi bi-qr-code"></i> Download Receipt (QR)
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Need Help?</h5>
+                </div>
+                <div class="card-body">
+                    <p class="small">
+                        <strong>Contact Support</strong><br>
+                        Phone: (555) 123-4567<br>
+                        Email: support@carrental.com
+                    </p>
+                    <p class="small text-muted">
+                        For changes or cancellations, please contact us at least 24 hours before your rental start time.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Payment Information Section -->
+    @if (Model.Payments != null && Model.Payments.Any())
+    {
+        <div class="card mt-4">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="bi bi-credit-card"></i> Payment Information</h5>
+            </div>
+            <div class="card-body">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Amount</th>
+                            <th>Payment Method</th>
+                            <th>Status</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var payment in Model.Payments)
+                        {
+                            <tr>
+                                <td><strong>$@payment.Amount.ToString("0.00")</strong></td>
+                                <td>@payment.PaymentMethod</td>
+                                <td>
+                                    @if (payment.Status == "Paid")
+                                    {
+                                        <span class="badge bg-success">@payment.Status</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-warning text-dark">@payment.Status</span>
+                                    }
+                                </td>
+                                <td>@payment.PaymentDate.ToString("MMM dd, yyyy HH:mm")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-warning mt-4">
+            <i class="bi bi-exclamation-triangle"></i>
+            <strong>No payment information found for this rental.</strong>
+            Please contact support if you believe this is an error.
+        </div>
+    }
+    <!-- QR Modal -->
+    <div class="modal fade" id="qrModal" tabindex="-1" aria-labelledby="qrModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-sm modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="qrModalLabel">Rental QR Code</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center">
+                    @* If the controller set ViewBag.QrCode to the data URI, we show it directly *@
+                    @if (ViewBag.QrCode != null)
+                    {
+                        <img id="rentalQrImg" src="@ViewBag.QrCode" alt="Rental QR" style="width:220px; max-width:100%;" />
+                    }
+                    else
+                    {
+                        <p class="text-muted">QR not available.</p>
+                    }
+                </div>
+                <div class="modal-footer">
+                    @* Download link: it points to the data URI. Browser will handle saving. *@
+                    @if (ViewBag.QrCode != null)
+                    {
+                        <a id="downloadQr" href="@ViewBag.QrCode" download="rental-@Model.Id-qr.png" class="btn btn-outline-primary">
+                            <i class="bi bi-download"></i> Download
+                        </a>
+                    }
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+@section Scripts {
+    <script>
+        function confirmCancel(rentalId, vehicleName) {
+            if (confirm(`Are you sure you want to cancel your rental for ${vehicleName}?\n\nThe vehicle will become available for others to rent.`)) {
+                window.location.href = `/Rental/Cancel/${rentalId}`;
+            }
+        }
+    </script>
+}

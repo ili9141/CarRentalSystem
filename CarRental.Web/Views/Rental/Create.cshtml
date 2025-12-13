@@ -1,0 +1,176 @@
+﻿@model CarRental.Core.Models.Rental
+@{
+    ViewData["Title"] = "Rent Vehicle";
+    var vehicle = ViewBag.Vehicle as CarRental.Core.Models.Vehicle;
+}
+
+<div class="container">
+    <h1 class="mb-4">Rent Vehicle</h1>
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger">@TempData["Error"]</div>
+    }
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Rental Details</h5>
+                </div>
+                <div class="card-body">
+                    @if (vehicle != null)
+                    {
+                        <div class="row mb-4">
+                            <div class="col-md-4">
+                                <div class="vehicle-image-placeholder bg-light d-flex align-items-center justify-content-center"
+                                     style="height: 150px; border-radius: 8px;">
+                                    <i class="bi bi-car-front-fill" style="font-size: 3rem; color: #6c757d;"></i>
+                                </div>
+                            </div>
+                            <div class="col-md-8">
+                                <h4>@vehicle.Brand @vehicle.Model</h4>
+                                <p class="text-muted">@vehicle.Year • @vehicle.Category</p>
+                                <p><strong>License Plate:</strong> @vehicle.LicensePlate</p>
+                                <p><strong>Daily Rate:</strong> $@vehicle.DailyRate.ToString("0.00")</p>
+                                <p>
+                                    <strong>Status:</strong>
+                                    @if (vehicle.IsAvailable)
+                                    {
+                                        <span class="badge bg-success">Available</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-danger">Not Available</span>
+                                    }
+                                </p>
+                            </div>
+                        </div>
+                    }
+
+                    <form method="post" action="/Rental/Create" id="rentalForm">
+                        <input type="hidden" name="VehicleId" value="@Model.VehicleId" />
+                        <input type="hidden" name="ClientId" value="@Model.ClientId" />
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label>Start Date</label>
+                                <input type="date" name="StartDate" class="form-control"
+                                       value="@Model.StartDate.ToString("yyyy-MM-dd")"
+                                       min="@DateTime.Today.ToString("yyyy-MM-dd")"
+                                       required />
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label>End Date</label>
+                                <input type="date" name="EndDate" class="form-control"
+                                       value="@Model.EndDate.ToString("yyyy-MM-dd")"
+                                       required />
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label>Payment Method</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="PaymentMethod" id="cash" value="Cash" checked>
+                                <label class="form-check-label" for="cash">
+                                    💵 Cash
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="PaymentMethod" id="debit" value="Debit Card">
+                                <label class="form-check-label" for="debit">
+                                    💳 Debit Card
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="PaymentMethod" id="credit" value="Credit Card">
+                                <label class="form-check-label" for="credit">
+                                    🏦 Credit Card
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <h6>Price Estimate</h6>
+                            <div id="priceEstimate">Select dates to see price</div>
+                        </div>
+
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-primary btn-lg">Confirm Rental</button>
+                            <a href="/Home" class="btn btn-outline-secondary">Back to Home</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Summary</h5>
+                </div>
+                <div class="card-body">
+                    <h6>Important Notes:</h6>
+                    <ul class="small">
+                        <li>Vehicle will become unavailable after rental</li>
+                        <li>Payment required immediately</li>
+                        <li>Free cancellation before rental start</li>
+                        <li>Late returns incur additional charges</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Simple price calculator
+    document.addEventListener('DOMContentLoaded', function() {
+        const dailyRate = @(vehicle?.DailyRate ?? 0);
+        const startInput = document.querySelector('input[name="StartDate"]');
+        const endInput = document.querySelector('input[name="EndDate"]');
+        const priceDisplay = document.getElementById('priceEstimate');
+
+        function updatePrice() {
+            const start = new Date(startInput.value);
+            const end = new Date(endInput.value);
+
+            if (start && end && end > start) {
+                const days = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
+                const total = days * dailyRate;
+                priceDisplay.innerHTML = `
+                    <strong>$${total.toFixed(2)}</strong><br>
+                    <small>${days} day${days !== 1 ? 's' : ''} × $${dailyRate.toFixed(2)}/day</small>
+                `;
+                endInput.min = startInput.value;
+            } else {
+                priceDisplay.textContent = 'Select valid dates';
+            }
+        }
+
+        // Set initial values
+        if (!startInput.value) startInput.value = new Date().toISOString().split('T')[0];
+        if (!endInput.value) {
+            const endDate = new Date();
+            endDate.setDate(endDate.getDate() + 3);
+            endInput.value = endDate.toISOString().split('T')[0];
+        }
+
+        updatePrice();
+        startInput.addEventListener('change', updatePrice);
+        endInput.addEventListener('change', updatePrice);
+
+        // Simple form validation on submit
+        document.getElementById('rentalForm').onsubmit = function() {
+            const start = new Date(startInput.value);
+            const end = new Date(endInput.value);
+
+            if (end <= start) {
+                alert('End date must be after start date!');
+                return false;
+            }
+
+            return true;
+        };
+    });
+</script>

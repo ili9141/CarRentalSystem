@@ -1,0 +1,111 @@
+# Car Rental Management System - Database Setup Guide
+
+## Prerequisites
+- SQL Server Express (or any SQL Server edition)
+- SQL Server Management Studio (SSMS)
+
+## Database Setup Steps
+
+### 1. Create the Database
+
+1. Open **SQL Server Management Studio (SSMS)**
+2. Connect to your SQL Server instance
+   - Common instance names: `localhost\SQLEXPRESS`, `.\SQLEXPRESS`, or `(localdb)\MSSQLLocalDB`
+3. Open the file `Database/DatabaseSetup.sql` from this repository
+4. Click **Execute** (or press F5)
+5. Verify the database was created:
+   - In Object Explorer, expand **Databases**
+   - You should see **CarRentalDB**
+
+### 2. Update Connection String in Your Project
+
+After cloning the repository, you need to update the connection string to match YOUR SQL Server instance:
+
+#### For the Web Project (ASP.NET Core MVC):
+
+1. Navigate to `CarRental.Web/appsettings.json` (or wherever your appsettings is located)
+2. Find the connection string section
+3. Update it with your server name:
+```json
+{
+  "ConnectionStrings": {
+    "DefaultConnection": "Server=YOUR_SERVER_NAME\\SQLEXPRESS;Database=CarRentalDB;Trusted_Connection=True;TrustServerCertificate=True;"
+  }
+}
+```
+
+**OR** if your connection string is in code:
+
+1. Navigate to `CarRental.Data/DatabaseConfig.cs`
+2. Update line 10:
+```csharp
+return "Server=YOUR_SERVER_NAME\\SQLEXPRESS;Database=CarRentalDB;Trusted_Connection=True;TrustServerCertificate=True;";
+```
+
+#### How to Find Your Server Name:
+
+**Method 1 - Through SSMS:**
+- When you open SSMS, the connection dialog shows your server name
+- Copy that exact name
+
+**Method 2 - Common Server Names:**
+- `localhost\SQLEXPRESS` (most common for SQL Server Express)
+- `.\SQLEXPRESS` (shorthand for localhost)
+- `(localdb)\MSSQLLocalDB` (for LocalDB)
+- Your computer name + `\SQLEXPRESS` (e.g., `DESKTOP-ABC123\SQLEXPRESS`)
+
+#### For the WinForms Admin Project:
+
+If there's a separate config file for WinForms:
+1. Navigate to `CarRental.Admin/App.config` 
+2. Update the connection string similarly
+
+### 3. Verify Connection
+
+1. Open the solution in Visual Studio
+2. Run the project (F5)
+3. If you get a connection error:
+   - Double-check your server name in SSMS
+   - Make sure SQL Server is running
+   - Verify the database exists in SSMS
+
+## Quick Reference: Updating Connection String
+
+**Find this:**
+```
+Server=localhost\\SQLEXPRESS
+```
+
+**Replace with YOUR server name:**
+```
+Server=YOUR_ACTUAL_SERVER_NAME\\SQLEXPRESS
+```
+
+## Troubleshooting
+
+### Error: "Cannot open database CarRentalDB"
+- Make sure you ran the `DatabaseSetup.sql` script
+- Check if the database exists in SSMS → Databases folder
+
+### Error: "A network-related or instance-specific error"
+- SQL Server service might not be running
+- Check Services (Windows + R → type `services.msc`)
+- Find `SQL Server (SQLEXPRESS)` and make sure it's running
+- Or verify your server name is correct in the connection string
+
+### Error: Login failed
+- The connection string uses `Trusted_Connection=True` (Windows Authentication)
+- Make sure you're logged into Windows with an account that has SQL Server access
+- Alternatively, you can use SQL Server authentication:
+```
+  Server=YOUR_SERVER\\SQLEXPRESS;Database=CarRentalDB;User Id=sa;Password=YourPassword;TrustServerCertificate=True;
+```
+
+## That's It!
+
+Once you've:
+1. ✅ Created the database using the SQL script
+2. ✅ Updated the connection string to YOUR server name
+3. ✅ Verified SQL Server is running
+
+You're ready to run the application! 🚀
