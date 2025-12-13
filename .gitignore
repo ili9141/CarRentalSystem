@@ -52,3 +52,24 @@ CodeCoverage/
 *.VisualState.xml
 TestResult.xml
 nunit-*.xml
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.cache
+*.db
+
+# Build results
+bin/
+obj/
+
+# Logs
+*.log
+
+.vs/
+bin/
+obj/
+*.user
+*.log
+build_log.txt
